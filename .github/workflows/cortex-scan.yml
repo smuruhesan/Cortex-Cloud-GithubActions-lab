@@ -31,7 +31,6 @@ jobs:
           
       - name: Run Scan
         run: |
-          # The repo-id is now automatically set using the GITHUB_REPOSITORY environment variable.
           ./cortexcli \
             --api-base-url "https://api-tac-x5.xdr.sg.paloaltonetworks.com" \
             --api-key "${{ secrets.CORTEX_API_KEY }}" \
@@ -44,7 +43,6 @@ jobs:
             --create-repo-if-missing
 
   terraform-deploy:
-    # This job will only run if the 'code-scan' job is successful.
     needs: code-scan
     runs-on: ubuntu-latest
     steps:
@@ -63,16 +61,14 @@ jobs:
         run: terraform init
         working-directory: 'terraform/azure/'
 
-      # This new step generates a detailed plan and saves it to a file.
       - name: Terraform Plan
         run: terraform plan -input=false -out=tfplan -var="github_username=${{ github.repository }}" -var-file="terraform.tfvars" -var="azure_subscription_id=${{ env.AZURE_SUBSCRIPTION_ID }}"
         working-directory: 'terraform/azure/'
 
-      # The 'apply' command now uses the plan file from the previous step.
       - name: Terraform Apply
         run: terraform apply -auto-approve "tfplan"
         working-directory: 'terraform/azure/'
-        
+
   # The job below is commented out as you requested.
   # This can be used later to destroy the resources for cleanup.
   # terraform-destroy:
@@ -91,6 +87,8 @@ jobs:
   # 
   #     - name: Terraform Init
   #       run: terraform init
+  #       working-directory: 'terraform/azure/'
   # 
   #     - name: Terraform Destroy
-  #       run: terraform destroy -auto-approve -var="github_username=${{ github.repository }}"
+  #       run: terraform destroy -auto-approve "tfplan"
+  #       working-directory: 'terraform/azure/'
