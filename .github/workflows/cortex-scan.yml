@@ -55,10 +55,7 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-          # The subscription ID is now explicitly passed to the login action.
-          # This action will automatically set the ARM_SUBSCRIPTION_ID environment variable.
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
+          
       - name: Path in working directory
         run: pwd
         working-directory: 'terraform/azure/'
