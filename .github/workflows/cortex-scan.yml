@@ -71,9 +71,10 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+
       - name: Run Terraform Deployment
         run: |
           terraform init
-          terraform plan -var "resource_prefix=${{ github.actor }}" -out="tfplan"
-          terraform apply "tfplan" -auto-approve
+          terraform plan -var "github_username=${{ github.actor }}" -out="tfplan"
+          terraform apply "tfplan"
         working-directory: ${{ env.TF_WORKING_DIR }}
