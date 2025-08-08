@@ -1,5 +1,3 @@
-//Merged
-
 name: 'Cortex Scan and Terraform Azure Deployment'
 
 on:
@@ -10,8 +8,8 @@ on:
 
 env:
   # Environment variables for Cortex CLI
-  CORTEX_API_KEY: ${{secrets.CORTEX_API_KEY}}
-  CORTEX_API_KEY_ID: ${{secrets.CORTEX_API_KEY_ID}}
+  CORTEX_API_KEY: ${{ secrets.CORTEX_API_KEY }}
+  CORTEX_API_KEY_ID: ${{ secrets.CORTEX_API_KEY_ID }}
   CORTEX_API_URL: https://api-tac-x5.xdr.sg.paloaltonetworks.com
   
   # Environment variable for Terraform
@@ -44,8 +42,8 @@ jobs:
           crtx_resp=$(curl "${CORTEX_API_URL}/public_api/v1/unified-cli/releases/download-link?os=linux&architecture=amd64" \
             -H "x-xdr-auth-id: ${CORTEX_API_KEY_ID}" \
             -H "Authorization: ${CORTEX_API_KEY}")
-          crtx_url=$(echo $crtx_resp | jq -r ".signed_url")
-          curl -o cortexcli $crtx_url
+          crtx_url=$(echo "$crtx_resp" | jq -r ".signed_url")
+          curl -o cortexcli "$crtx_url"
           chmod +x cortexcli
           ./cortexcli --version
 
@@ -56,9 +54,9 @@ jobs:
             --api-key "${CORTEX_API_KEY}" \
             --api-key-id "${CORTEX_API_KEY_ID}" \
             code scan \
-            --directory "${{github.workspace}}" \
-            --repo-id "${{github.repository}}" \
-            --branch "${{github.ref_name}}" \
+            --directory "${{ github.workspace }}" \
+            --repo-id "${{ github.repository }}" \
+            --branch "${{ github.ref_name }}" \
             --source "GITHUB_ACTIONS" \
             --create-repo-if-missing
       
