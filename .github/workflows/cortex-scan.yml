@@ -56,9 +56,8 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Show Azure env variables for Terraform
-        run: env | grep ARM_
-
+      - name: Azure context info (debug)
+        run: az account show
   
       - name: Path in working directory
         run: pwd
