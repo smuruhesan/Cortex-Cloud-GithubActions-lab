@@ -57,7 +57,18 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      
+          
+      - name: Set Azure Subscription Environment Variable
+        run: echo "ARM_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
+
+      - name: Set Terraform Azure Credentials
+        run: |
+          echo "ARM_CLIENT_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r .clientId)" >> $GITHUB_ENV
+          echo "ARM_CLIENT_SECRET=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r .clientSecret)" >> $GITHUB_ENV
+          echo "ARM_SUBSCRIPTION_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r .subscriptionId)" >> $GITHUB_ENV
+          echo "ARM_TENANT_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r .tenantId)" >> $GITHUB_ENV
+
+        
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
@@ -67,8 +78,9 @@ jobs:
 
       # This new step generates a detailed plan and saves it to a file.
       - name: Terraform Plan
-        run: terraform plan -input=false -out=tfplan -var="github_username=${{ github.repository }}" -var-file="terraform.tfvars"
+        run: terraform plan -input=false -out=tfplan -var="github_username=${{ github.repository }}" -var="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" -var-file="terraform.tfvars"
         working-directory: 'terraform/azure/'
+
 
       # The 'apply' command now uses the plan file from the previous step.
       - name: Terraform Apply
