@@ -61,7 +61,7 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-        working-directory: '/terraform/azure-vm/'
+        working-directory: './terraform/azure-vm/'
 
       # This new step generates a detailed plan and saves it to a file.
       - name: Terraform Plan
