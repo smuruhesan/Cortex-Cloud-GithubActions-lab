@@ -71,6 +71,12 @@ jobs:
         run: terraform init
         working-directory: 'terraform/azure/'
 
+
+      - name: List files in working directory
+        run: ls -la
+        run: pwd
+        working-directory: 'terraform/azure/'
+
       - name: Terraform Plan
         run: |
           terraform plan -input=false -out=tfplan \
