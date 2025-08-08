@@ -55,7 +55,11 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-          
+
+      - name: Show Azure env variables for Terraform
+        run: env | grep ARM_
+
+  
       - name: Path in working directory
         run: pwd
         working-directory: 'terraform/azure/'
