@@ -4,6 +4,12 @@
 # It will now automatically read the subscription ID from the environment.
 provider "azurerm" {
   features {}
+  subscription_id = var.subscription_id
+}
+
+variable "subscription_id" {
+  description = "Azure Subscription ID"
+  type        = string
 }
 
 # -------------------------------------------------------------------------------------
