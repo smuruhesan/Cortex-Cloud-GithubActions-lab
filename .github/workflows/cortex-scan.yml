@@ -1,53 +1,89 @@
-
-name: Cortex CLI Code Scan
+name: Cortex Cloud Code Scan & Azure Deployment
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
-env:
-  CORTEX_API_KEY: ${{secrets.CORTEX_API_KEY}}
-  CORTEX_API_KEY_ID: ${{secrets.CORTEX_API_KEY_ID}}
-  CORTEX_API_URL: https://api-tac-x5.xdr.sg.paloaltonetworks.com
-  
 jobs:
-  cortex-code-scan:
+  code-scan:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 22
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+      
+      - name: Download cortexcli
+        id: download-cli
+        run: |
+          response=$(curl --location 'https://api-tac-x5.xdr.sg.paloaltonetworks.com/public_api/v1/unified-cli/releases/download-link?os=linux&architecture=amd64' \
+            --header 'Authorization: ${{ secrets.CORTEX_API_KEY }}' \
+            --header 'x-xdr-auth-id: ${{ secrets.CORTEX_API_KEY_ID }}' \
+            --silent)
+          
+          downloadUrl=$(echo "${response}" | jq -r '.signed_url')
+          
+          curl -o cortexcli "${downloadUrl}"
+          chmod +x cortexcli
+          ./cortexcli --version
+          
+      - name: Run Scan
+        run: |
+          # The repo-id is now automatically set using the GITHUB_REPOSITORY environment variable.
+          ./cortexcli \
+            --api-base-url "https://api-tac-x5.xdr.sg.paloaltonetworks.com" \
+            --api-key "${{ secrets.CORTEX_API_KEY }}" \
+            --api-key-id "${{ secrets.CORTEX_API_KEY_ID }}" \
+            code scan \
+            --directory "$(pwd)" \
+            --repo-id "${{ github.repository }}" \
+            --branch "${{ github.ref_name }}" \
+            --source "GITHUB_ACTIONS" \
+            --create-repo-if-missing
 
-    - name: Verify Node.js Version
-      run: node -v
+  terraform-deploy:
+    # This job will only run if the 'code-scan' job is successful.
+    needs: code-scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
 
-    - name: Download cortexcli
-      run: |
-        set -x
-        crtx_resp=$(curl "${CORTEX_API_URL}/public_api/v1/unified-cli/releases/download-link?os=linux&architecture=amd64" \
-          -H "x-xdr-auth-id: ${CORTEX_API_KEY_ID}" \
-          -H "Authorization: ${CORTEX_API_KEY}")
-        crtx_url=$(echo $crtx_resp | jq -r ".signed_url")
-        curl -o cortexcli $crtx_url
-        chmod +x cortexcli
-        ./cortexcli --version
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
 
-    - name: Run Cortex CLI Code Scan
-      run: |
-        ./cortexcli \
-          --api-base-url "${CORTEX_API_URL}" \
-          --api-key "${CORTEX_API_KEY}" \
-          --api-key-id "${CORTEX_API_KEY_ID}" \
-          code scan \
-          --directory "${{github.workspace}}" \
-          --repo-id "${{github.repository}}" \
-          --branch "${{github.ref_name}}" \
-          --source "GITHUB_ACTIONS" \
-          --create-repo-if-missing
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        # The 'github_username' variable is now automatically populated by the GITHUB_REPOSITORY variable.
+        run: terraform apply -auto-approve -var="github_username=${{ github.repository }}"
+
+  # The job below is commented out as you requested.
+  # This can be used later to destroy the resources for cleanup.
+  # terraform-destroy:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Source Code
+  #       uses: actions/checkout@v4
+  # 
+  #     - name: Azure Login
+  #       uses: azure/login@v1
+  #       with:
+  #         creds: ${{ secrets.AZURE_CREDENTIALS }}
+  # 
+  #     - name: Setup Terraform
+  #       uses: hashicorp/setup-terraform@v2
+  # 
+  #     - name: Terraform Init
+  #       run: terraform init
+  # 
+  #     - name: Terraform Destroy
+  #       run: terraform destroy -auto-approve -var="github_username=${{ github.repository }}"
