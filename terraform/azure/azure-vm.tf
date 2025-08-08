@@ -1,7 +1,4 @@
-# File 1: main.tf
-# This file contains the main Terraform code with some flaws.
-# The hardcoded password has been moved to a separate .tfvars file
-# to make it more detectable for the scanner.
+# main.tf - Terraform code to create a flawed Azure VM for code scanning demonstration.
 
 provider "azurerm" {
   features {}
@@ -108,41 +105,3 @@ resource "azurerm_linux_virtual_machine" "flawed_vm" {
 output "public_ip_address" {
   value = azurerm_public_ip.flawed_public_ip.ip_address
 }
-```hcl
-# File 2: terraform.tfvars
-# This file contains the hardcoded admin password.
-# Scanners are highly likely to detect secrets in this file.
-
-admin_password = "Pa$$word123!"
-```Dockerfile
-# File 3: Dockerfile
-# This Dockerfile runs the container as the root user, which is a common security flaw.
-
-# Flaw: Using the root user. A scanner should flag this.
-FROM ubuntu:latest
-RUN apt-get update && apt-get install -y nginx
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```yaml
-# File 4: daemonset.yaml
-# This Kubernetes manifest has a security context that allows for privilege escalation.
-
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  name: flawed-daemonset
-spec:
-  selector:
-    matchLabels:
-      app: flawed-daemonset
-  template:
-    metadata:
-      labels:
-        app: flawed-daemonset
-    spec:
-      containers:
-      - name: flawed-container
-        image: nginx:latest
-        securityContext:
-          # Flaw: This allows the container to potentially escalate privileges.
-          allowPrivilegeEscalation: true
