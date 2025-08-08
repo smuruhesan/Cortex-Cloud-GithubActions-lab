@@ -61,10 +61,12 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
+        working-directory: './terraform/'
 
       - name: Terraform Apply
         # The 'github_username' variable is now automatically populated by the GITHUB_REPOSITORY variable.
         run: terraform apply -auto-approve -var="github_username=${{ github.repository }}"
+        working-directory: './terraform/'
 
   # The job below is commented out as you requested.
   # This can be used later to destroy the resources for cleanup.
