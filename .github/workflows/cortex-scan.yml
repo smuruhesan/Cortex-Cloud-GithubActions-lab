@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  TF_WORKING_DIR: './terraform'
+  TF_WORKING_DIR: './terraform/azure'
 
 jobs:
   deploy:
