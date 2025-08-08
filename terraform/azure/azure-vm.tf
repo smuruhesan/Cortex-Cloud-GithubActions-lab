@@ -1,35 +1,24 @@
-# main.tf - Terraform code to create a flawed Azure VM for code scanning demonstration.
+# File 1: main.tf
+# This file contains the main Terraform code with some flaws.
+# The hardcoded password has been moved to a separate .tfvars file
+# to make it more detectable for the scanner.
 
-# This provider block configures the Azure provider.
-# It's a standard block and does not contain any flaws.
 provider "azurerm" {
   features {}
 }
 
-# -------------------------------------------------------------------------------------
-# Intentionally Flawed Code for Demonstration Purposes
-# -------------------------------------------------------------------------------------
-
-# A new variable to track the resource owner via GitHub username.
-# This value should be passed from the GitHub Actions workflow.
 variable "github_username" {
   description = "The GitHub username of the person who triggered the deployment."
   type        = string
 }
 
-# Flaw 1: Hardcoding sensitive information (admin password).
-# Hardcoding secrets directly in the code is a significant security risk.
-# This value should be managed securely using a tool like GitHub Secrets or Azure Key Vault.
 variable "admin_password" {
   description = "The admin password for the VM. This is a flaw and should not be hardcoded."
-  default     = "Pa$$word123!"
   type        = string
-  sensitive   = true # Although we mark it sensitive, it's still hardcoded.
+  sensitive   = true
 }
 
 # Flaw 2: Overly permissive Network Security Group (NSG) rule.
-# This rule allows all inbound traffic from any source to any port. 
-# This is a major security flaw and exposes the VM to the public internet without restriction.
 resource "azurerm_network_security_group" "flawed_nsg" {
   name                = "${var.github_username}-flawed-nsg"
   location            = "eastus"
@@ -48,13 +37,11 @@ resource "azurerm_network_security_group" "flawed_nsg" {
   }
 }
 
-# Resource group for the VM.
 resource "azurerm_resource_group" "flawed_rg" {
   name     = "${var.github_username}-flawed-rg"
   location = "eastus"
 }
 
-# Virtual network for the VM.
 resource "azurerm_virtual_network" "flawed_vnet" {
   name                = "${var.github_username}-flawed-vnet"
   address_space       = ["10.0.0.0/16"]
@@ -62,7 +49,6 @@ resource "azurerm_virtual_network" "flawed_vnet" {
   resource_group_name = azurerm_resource_group.flawed_rg.name
 }
 
-# Subnet for the VM.
 resource "azurerm_subnet" "flawed_subnet" {
   name                 = "${var.github_username}-flawed-subnet"
   resource_group_name  = azurerm_resource_group.flawed_rg.name
@@ -70,7 +56,6 @@ resource "azurerm_subnet" "flawed_subnet" {
   address_prefixes     = ["10.0.2.0/24"]
 }
 
-# Public IP address for the VM.
 resource "azurerm_public_ip" "flawed_public_ip" {
   name                = "${var.github_username}-flawed-public-ip"
   location            = azurerm_resource_group.flawed_rg.location
@@ -78,7 +63,6 @@ resource "azurerm_public_ip" "flawed_public_ip" {
   allocation_method   = "Dynamic"
 }
 
-# Network interface for the VM, associated with the flawed NSG.
 resource "azurerm_network_interface" "flawed_nic" {
   name                = "${var.github_username}-flawed-nic"
   location            = azurerm_resource_group.flawed_rg.location
@@ -95,7 +79,6 @@ resource "azurerm_network_interface" "flawed_nic" {
 }
 
 # Flaw 3: Using a known insecure or outdated VM image.
-# This image might have known vulnerabilities that a scanner should flag.
 resource "azurerm_linux_virtual_machine" "flawed_vm" {
   name                = "${var.github_username}-flawed-vm"
   resource_group_name = azurerm_resource_group.flawed_rg.name
@@ -122,10 +105,44 @@ resource "azurerm_linux_virtual_machine" "flawed_vm" {
   }
 }
 
-# -------------------------------------------------------------------------------------
-# Outputs
-# -------------------------------------------------------------------------------------
-
 output "public_ip_address" {
   value = azurerm_public_ip.flawed_public_ip.ip_address
 }
+```hcl
+# File 2: terraform.tfvars
+# This file contains the hardcoded admin password.
+# Scanners are highly likely to detect secrets in this file.
+
+admin_password = "Pa$$word123!"
+```Dockerfile
+# File 3: Dockerfile
+# This Dockerfile runs the container as the root user, which is a common security flaw.
+
+# Flaw: Using the root user. A scanner should flag this.
+FROM ubuntu:latest
+RUN apt-get update && apt-get install -y nginx
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```yaml
+# File 4: daemonset.yaml
+# This Kubernetes manifest has a security context that allows for privilege escalation.
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: flawed-daemonset
+spec:
+  selector:
+    matchLabels:
+      app: flawed-daemonset
+  template:
+    metadata:
+      labels:
+        app: flawed-daemonset
+    spec:
+      containers:
+      - name: flawed-container
+        image: nginx:latest
+        securityContext:
+          # Flaw: This allows the container to potentially escalate privileges.
+          allowPrivilegeEscalation: true
