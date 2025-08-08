@@ -4,8 +4,6 @@
 # It's a standard block and does not contain any flaws.
 provider "azurerm" {
   features {}
-  # NEW: We are now explicitly telling Terraform which subscription to use.
-  subscription_id = var.azure_subscription_id
 }
 
 # -------------------------------------------------------------------------------------
