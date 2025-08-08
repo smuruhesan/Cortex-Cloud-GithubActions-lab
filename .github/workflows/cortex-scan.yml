@@ -1,4 +1,6 @@
-name: 'Combined Terraform and Cortex Scan'
+//Merged
+
+name: 'Cortex Scan and Terraform Azure Deployment'
 
 on:
   push:
@@ -7,15 +9,17 @@ on:
   workflow_dispatch:
 
 env:
-  TF_WORKING_DIR: './terraform/azure'
+  # Environment variables for Cortex CLI
   CORTEX_API_KEY: ${{secrets.CORTEX_API_KEY}}
   CORTEX_API_KEY_ID: ${{secrets.CORTEX_API_KEY_ID}}
   CORTEX_API_URL: https://api-tac-x5.xdr.sg.paloaltonetworks.com
-  TF_LOG: INFO
+  
+  # Environment variable for Terraform
+  TF_WORKING_DIR: './terraform/azure'
 
 jobs:
-  cortex-scan-and-deploy:
-    name: 'Cortex Scan and Terraform Deploy'
+  scan-and-deploy:
+    name: 'Cortex Scan and Terraform Deployment'
     runs-on: ubuntu-latest
     environment: production
 
@@ -23,13 +27,17 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # ... (Cortex CLI Code Scan Steps) ...
+      # ------------------------------------
+      # Cortex CLI Code Scan Steps
+      # ------------------------------------
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
       - name: Verify Node.js Version
         run: node -v
+
       - name: Download cortexcli
         run: |
           set -x
@@ -40,6 +48,7 @@ jobs:
           curl -o cortexcli $crtx_url
           chmod +x cortexcli
           ./cortexcli --version
+
       - name: Run Cortex CLI Code Scan
         run: |
           ./cortexcli \
@@ -53,7 +62,9 @@ jobs:
             --source "GITHUB_ACTIONS" \
             --create-repo-if-missing
       
-      # --- Terraform Azure Deployment Steps ---
+      # ------------------------------------
+      # Terraform Azure Deployment Steps
+      # ------------------------------------
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         
@@ -65,6 +76,6 @@ jobs:
       - name: Run Terraform Deployment
         run: |
           terraform init
-          terraform plan -var "github_username=${{ github.actor }}" -out="tfplan"
+          terraform plan -var "resource_prefix=${{ github.actor }}" -out="tfplan"
           terraform apply "tfplan" -auto-approve
         working-directory: ${{ env.TF_WORKING_DIR }}
