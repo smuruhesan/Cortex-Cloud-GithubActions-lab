@@ -9,39 +9,6 @@ on:
       - main
 
 jobs:
-  code-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v4
-      
-      - name: Download cortexcli
-        id: download-cli
-        run: |
-          response=$(curl --location 'https://api-tac-x5.xdr.sg.paloaltonetworks.com/public_api/v1/unified-cli/releases/download-link?os=linux&architecture=amd64' \
-            --header 'Authorization: ${{ secrets.CORTEX_API_KEY }}' \
-            --header 'x-xdr-auth-id: ${{ secrets.CORTEX_API_KEY_ID }}' \
-            --silent)
-          
-          downloadUrl=$(echo "${response}" | jq -r '.signed_url')
-          
-          curl -o cortexcli "${downloadUrl}"
-          chmod +x cortexcli
-          ./cortexcli --version
-          
-      - name: Run Scan
-        run: |
-          ./cortexcli \
-            --api-base-url "https://api-tac-x5.xdr.sg.paloaltonetworks.com" \
-            --api-key "${{ secrets.CORTEX_API_KEY }}" \
-            --api-key-id "${{ secrets.CORTEX_API_KEY_ID }}" \
-            code scan \
-            --directory "$(pwd)" \
-            --repo-id "${{ github.repository }}" \
-            --branch "${{ github.ref_name }}" \
-            --source "GITHUB_ACTIONS" \
-            --create-repo-if-missing
-
   terraform-deploy:
     runs-on: ubuntu-latest
     needs: code-scan
@@ -68,6 +35,15 @@ jobs:
                     --tenant $(jq -r .tenantId azurecreds.json)
 
           az account show
+
+          rm -rf terraform
+
+          # Download and unzip terraform
+          TERRAFORM_VERSION="1.12.2"
+          curl -o terraform.zip https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+          unzip -o terraform.zip
+          chmod +x terraform
+          sudo mv terraform /usr/local/bin/
 
           # Install Terraform CLI
           TERRAFORM_VERSION="1.12.2"
