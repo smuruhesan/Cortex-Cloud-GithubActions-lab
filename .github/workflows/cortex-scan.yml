@@ -82,10 +82,10 @@ jobs:
       - name: Terraform Plan
         run: |
           terraform plan -input=false -out=tfplan \
-          -var="github_username=smuruhesan/Cortex-Cloud-GithubActions-lab" \
+          -var="github_username=${{ github.repository }}" \
           -var="subscription_id=${{ steps.login.outputs.subscriptionId }}" \
-          -var-file="terraform.tfvars"
-           working-directory: 'terraform/azure/'
+          -var="admin_password=${{ secrets.ADMIN_PASSWORD }}"
+        working-directory: 'terraform/azure/'
 
       - name: Terraform Apply
         run: terraform apply -auto-approve "tfplan"
