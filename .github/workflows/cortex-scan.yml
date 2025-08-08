@@ -58,9 +58,6 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
       
-      # Add this new step to verify the subscription ID
-      - name: Verify Azure Subscription ID
-        run: echo "Azure Subscription ID: ${{ env.AZURE_SUBSCRIPTION_ID }}"
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
@@ -70,7 +67,7 @@ jobs:
 
       # This new step generates a detailed plan and saves it to a file.
       - name: Terraform Plan
-        run: terraform plan -input=false -out=tfplan -var="github_username=${{ github.repository }}" -var-file="terraform.tfvars" -var="azure_subscription_id=${{ env.AZURE_SUBSCRIPTION_ID }}"
+        run: terraform plan -input=false -out=tfplan -var="github_username=${{ github.repository }}" -var-file="terraform.tfvars"
         working-directory: 'terraform/azure/'
 
       # The 'apply' command now uses the plan file from the previous step.
