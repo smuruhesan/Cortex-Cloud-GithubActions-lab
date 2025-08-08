@@ -1,1 +1,1 @@
-admin_password: Test@123
+admin_password = "Test@123"
