@@ -78,12 +78,12 @@ resource "azurerm_subnet" "flawed_subnet" {
   address_prefixes     = ["10.0.2.0/24"]
 }
 
-# Public IP address for the VM.
 resource "azurerm_public_ip" "flawed_public_ip" {
   name                = "${var.github_username}-flawed-public-ip"
   location            = azurerm_resource_group.flawed_rg.location
   resource_group_name = azurerm_resource_group.flawed_rg.name
   allocation_method   = "Dynamic"
+  sku                 = "Basic"
 }
 
 # Network interface for the VM. The NSG association will be a separate resource.
