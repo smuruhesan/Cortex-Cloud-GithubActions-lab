@@ -45,46 +45,36 @@ jobs:
             --source "GITHUB_ACTIONS" \
             --create-repo-if-missing
 
-  terraform-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v4
+terraform-deploy:
+  runs-on: ubuntu-latest
+  steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
 
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+    - name: Azure Login and Terraform Deploy
+      env:
+        AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+        ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+      run: |
+        echo "$AZURE_CREDENTIALS" > ./azurecreds.json
 
-      - name: Azure context info (debug)
-        run: az account show
-  
-      - name: Path in working directory
-        run: pwd
-        working-directory: 'terraform/azure/'
+        az login --service-principal -u $(jq -r .clientId azurecreds.json) \
+                  -p $(jq -r .clientSecret azurecreds.json) \
+                  --tenant $(jq -r .tenantId azurecreds.json)
 
-      - name: List files in working directory
-        run: ls -la
-        working-directory: 'terraform/azure/'
+        az account show  # Optional: verify login
 
-        
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+        cd terraform/azure/
 
-      - name: Terraform Init
-        run: terraform init
-        working-directory: 'terraform/azure/'
+        terraform init
 
-      - name: Terraform Plan
-        run: |
-          terraform plan -input=false -out=tfplan \
-          -var="github_username=${{ github.repository }}" \
-          -var="admin_password=${{ secrets.ADMIN_PASSWORD }}"
-        working-directory: 'terraform/azure/'
+        terraform plan -input=false -out=tfplan \
+          -var="github_username=${GITHUB_REPOSITORY}" \
+          -var="admin_password=${ADMIN_PASSWORD}"
 
-      - name: Terraform Apply
-        run: terraform apply -auto-approve "tfplan"
-        working-directory: 'terraform/azure/'
+        terraform apply -auto-approve tfplan
+
 
         
 
