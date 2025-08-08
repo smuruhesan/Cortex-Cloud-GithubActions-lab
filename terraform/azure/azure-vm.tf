@@ -1,7 +1,7 @@
 # main.tf - Terraform code to create a flawed Azure VM for code scanning demonstration.
 
 # This provider block configures the Azure provider.
-# It's a standard block and does not contain any flaws.
+# It will now automatically read the subscription ID from the environment.
 provider "azurerm" {
   features {}
 }
@@ -9,12 +9,6 @@ provider "azurerm" {
 # -------------------------------------------------------------------------------------
 # Intentionally Flawed Code for Demonstration Purposes
 # -------------------------------------------------------------------------------------
-
-# A new variable to track the Azure subscription ID, passed from the workflow.
-variable "azure_subscription_id" {
-  description = "The Azure Subscription ID for the deployment."
-  type        = string
-}
 
 # A new variable to track the resource owner via GitHub username.
 # This value should be passed from the GitHub Actions workflow.
@@ -33,7 +27,7 @@ variable "admin_password" {
 }
 
 # Flaw 2: Overly permissive Network Security Group (NSG) rule.
-# This rule allows all inbound traffic from any source to any port. 
+# This rule allows all inbound traffic from any source to any port.
 # This is a major security flaw and exposes the VM to the public internet without restriction.
 resource "azurerm_network_security_group" "flawed_nsg" {
   name                = "${var.github_username}-flawed-nsg"
@@ -45,7 +39,6 @@ resource "azurerm_network_security_group" "flawed_nsg" {
     priority                   = 100
     direction                  = "Inbound"
     access                     = "Allow"
-    # CORRECTED: protocol value should be '*' instead of 'Any'
     protocol                   = "*"
     source_port_range          = "*"
     destination_port_range     = "*"
@@ -76,6 +69,7 @@ resource "azurerm_subnet" "flawed_subnet" {
   address_prefixes     = ["10.0.2.0/24"]
 }
 
+# Public IP address for the VM.
 resource "azurerm_public_ip" "flawed_public_ip" {
   name                = "${var.github_username}-flawed-public-ip"
   location            = azurerm_resource_group.flawed_rg.location
