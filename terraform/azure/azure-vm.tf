@@ -4,11 +4,19 @@
 # It's a standard block and does not contain any flaws.
 provider "azurerm" {
   features {}
+  # NEW: We are now explicitly telling Terraform which subscription to use.
+  subscription_id = var.azure_subscription_id
 }
 
 # -------------------------------------------------------------------------------------
 # Intentionally Flawed Code for Demonstration Purposes
 # -------------------------------------------------------------------------------------
+
+# A new variable to track the Azure subscription ID, passed from the workflow.
+variable "azure_subscription_id" {
+  description = "The Azure Subscription ID for the deployment."
+  type        = string
+}
 
 # A new variable to track the resource owner via GitHub username.
 # This value should be passed from the GitHub Actions workflow.
