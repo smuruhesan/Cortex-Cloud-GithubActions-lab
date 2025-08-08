@@ -1,4 +1,4 @@
-name: 'Terraform Azure Deployment'
+name: 'Simple Terraform Azure Deployment'
 
 on:
   push:
@@ -10,52 +10,8 @@ env:
   TF_WORKING_DIR: './terraform'
 
 jobs:
-  init:
-    name: 'Terraform Init'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Terraform Init
-        id: init
-        run: terraform init
-        working-directory: ${{ env.TF_WORKING_DIR }}
-
-  plan:
-    name: 'Terraform Plan'
-    needs: init
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Terraform Plan
-        id: plan
-        run: terraform plan -var "resource_prefix=${{ github.actor }}" -out="tfplan"
-        working-directory: ${{ env.TF_WORKING_DIR }}
-
-  apply:
-    name: 'Terraform Apply'
-    needs: plan
+  deploy:
+    name: 'Deploy Terraform to Azure'
     runs-on: ubuntu-latest
     environment: production
 
@@ -71,6 +27,9 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Terraform Apply
-        run: terraform apply -var "resource_prefix=${{ github.actor }}" -auto-approve
+      - name: Run Terraform Deployment
+        run: |
+          terraform init
+          terraform plan -var "resource_prefix=${{ github.actor }}" -out="tfplan"
+          terraform apply -var "resource_prefix=${{ github.actor }}" -auto-approve
         working-directory: ${{ env.TF_WORKING_DIR }}
